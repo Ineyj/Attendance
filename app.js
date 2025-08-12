@@ -76,8 +76,15 @@ class SmartAttendanceSystem {
       document.getElementById("studentName").value = this.currentUser.fullName
       document.getElementById("studentId").value = this.currentUser.studentId
 
+      // Show user info in header
+      document.getElementById("userName").textContent = this.currentUser.fullName
+      document.getElementById("userInfo").style.display = "flex"
+
       // Show welcome message
       this.showMessage(`Welcome back, ${this.currentUser.fullName}!`, "success")
+    } else {
+      // Hide user info
+      document.getElementById("userInfo").style.display = "none"
     }
   }
 
@@ -130,7 +137,7 @@ class SmartAttendanceSystem {
     })
 
     // Logout
-    document.getElementById("logoutBtn").addEventListener("click", () => this.handleLogout())
+    document.getElementById("logoutBtn").addEventListener("click", () => this.logout())
 
     // QR Scanner
     document.getElementById("scanQrBtn").addEventListener("click", () => this.startQRScanner())
@@ -356,6 +363,8 @@ class SmartAttendanceSystem {
     document.getElementById("studentForm").reset()
     document.getElementById("course").value = ""
 
+    // Update UI
+    this.updateUserInterface()
     this.showAuthScreen()
     this.showMessage("You have been logged out", "info")
   }
