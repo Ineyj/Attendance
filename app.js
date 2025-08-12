@@ -31,6 +31,7 @@ class SmartAttendanceSystem {
     // Hide loading screen after initialization
     setTimeout(() => {
       this.hideLoadingScreen()
+      this.checkAuthenticationStatus()
     }, 3000)
 
     // Set today's date in filter
@@ -44,7 +45,40 @@ class SmartAttendanceSystem {
 
   hideLoadingScreen() {
     document.getElementById("loadingScreen").style.display = "none"
+    // Don't show main container immediately - let authentication decide
+  }
+
+  showAuthScreen() {
+    document.getElementById("authContainer").style.display = "flex"
+    document.getElementById("mainContainer").style.display = "none"
+  }
+
+  hideAuthScreen() {
+    document.getElementById("authContainer").style.display = "none"
     document.getElementById("mainContainer").style.display = "block"
+  }
+
+  checkAuthenticationStatus() {
+    const currentUser = localStorage.getItem("currentUser")
+    if (currentUser) {
+      this.currentUser = JSON.parse(currentUser)
+      this.isAuthenticated = true
+      this.hideAuthScreen()
+      this.updateUserInterface()
+    } else {
+      this.showAuthScreen()
+    }
+  }
+
+  updateUserInterface() {
+    if (this.currentUser) {
+      // Update student form with user data
+      document.getElementById("studentName").value = this.currentUser.fullName
+      document.getElementById("studentId").value = this.currentUser.studentId
+
+      // Show welcome message
+      this.showMessage(`Welcome back, ${this.currentUser.fullName}!`, "success")
+    }
   }
 
   startRealTimeClock() {
@@ -80,6 +114,20 @@ class SmartAttendanceSystem {
 
     // Authentication form
     document.getElementById("authForm").addEventListener("submit", (e) => this.handleAuthentication(e))
+
+    // Student authentication forms
+    document.getElementById("studentLoginForm").addEventListener("submit", (e) => this.handleStudentLogin(e))
+    document.getElementById("studentSignupForm").addEventListener("submit", (e) => this.handleStudentSignup(e))
+
+    // Auth form switchers
+    document.getElementById("showSignupForm").addEventListener("click", (e) => {
+      e.preventDefault()
+      this.switchAuthForm("signup")
+    })
+    document.getElementById("showLoginForm").addEventListener("click", (e) => {
+      e.preventDefault()
+      this.switchAuthForm("login")
+    })
 
     // Logout
     document.getElementById("logoutBtn").addEventListener("click", () => this.handleLogout())
