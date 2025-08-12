@@ -571,6 +571,13 @@ class SmartAttendanceSystem {
   async handleCheckIn(e) {
     e.preventDefault()
 
+    // Check if user is authenticated
+    if (!this.isAuthenticated || !this.currentUser) {
+      this.showMessage("❌ Please login first to check in.", "error")
+      this.showAuthScreen()
+      return
+    }
+
     // Prevent double submission
     if (this.isSubmitting) {
       return
