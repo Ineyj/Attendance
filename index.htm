@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance System - GCTU</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="school-logo">
+                <img id="schoolLogo" src="GCTU Logo.jpg" alt="GCTU Logo">
+            </div>
+            <h1 class="school-name">Ghana Communication Technology University</h1>
+            <p class="school-motto">"Knowledge Comes From Learning"</p>
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+            <p class="loading-text">Initializing Smart Attendance System...</p>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo-container">
+                    <img id="headerLogo" src="GCTU Logo.jpg" alt="GCTU Logo">
+                </div>
+                <div class="header-text">
+                    <h1>GCTU Smart Attendance</h1>
+                    <p class="header-motto">Knowledge Comes From Learning</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    <span>LIVE</span>
+                </div>
+                <div class="role-switcher">
+                    <button id="studentBtn" class="role-btn active">
+                        <i class="fas fa-user-graduate"></i>
+                        Student
+                    </button>
+                    <button id="lecturerBtn" class="role-btn">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        Lecturer
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Student Interface -->
+        <div id="studentInterface" class="interface active">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-user-check"></i> Student Check-In</h2>
+                    <div class="real-time-clock" id="realTimeClock"></div>
+                </div>
+                
+                <form id="studentForm">
+                    <div class="form-group">
+                        <label for="studentName">
+                            <i class="fas fa-user"></i>
+                            Full Name:
+                        </label>
+                        <input type="text" id="studentName" required placeholder="Enter your full name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="studentId">
+                            <i class="fas fa-id-card"></i>
+                            Student ID:
+                        </label>
+                        <input type="text" id="studentId" required placeholder="Enter your student ID">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="course">
+                            <i class="fas fa-book"></i>
+                            Course:
+                        </label>
+                        <div class="course-search-container">
+                            <input type="text" id="courseSearch" placeholder="Search for your course..." autocomplete="off">
+                            <div id="courseDropdown" class="course-dropdown hidden">
+                                <!-- Course options will be populated here -->
+                            </div>
+                        </div>
+                        <input type="hidden" id="course" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="group">
+                            <i class="fas fa-users"></i>
+                            Group:
+                        </label>
+                        <select id="group" required>
+                            <option value="">Select Group</option>
+                            <option value="A">Group A</option>
+                            <option value="B">Group B</option>
+                            <option value="C">Group C</option>
+                            <option value="D">Group D</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lecturer">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            Lecturer Name:
+                        </label>
+                        <input type="text" id="lecturer" required placeholder="Enter lecturer's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="venue">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Class Venue:
+                        </label>
+                        <input type="text" id="venue" required placeholder="e.g., Lecture Hall A, Lab 2, Room 101">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="qrInput">
+                            <i class="fas fa-qrcode"></i>
+                            Session QR Code (Optional):
+                        </label>
+                        <div class="qr-input-group">
+                            <input type="text" id="qrInput" placeholder="Scan or enter session code">
+                            <button type="button" id="scanQrBtn" class="scan-btn">
+                                <i class="fas fa-camera"></i>
+                                Scan QR
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="qrScanner" class="qr-scanner hidden">
+                        <div class="scanner-header">
+                            <h3><i class="fas fa-camera"></i> QR Code Scanner</h3>
+                            <button type="button" id="stopScanBtn" class="close-btn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div id="qrReader" class="qr-reader"></div>
+                        <p class="scanner-instruction">Position the QR code within the frame</p>
+                    </div>
+                    
+                    <div class="location-status" id="locationStatus">
+                        <div class="status-content">
+                            <span class="status-icon">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                            <span class="status-text">Verifying GCTU campus location...</span>
+                        </div>
+                        <div class="location-details" id="locationDetails"></div>
+                    </div>
+                    
+                    <button type="submit" id="checkInBtn" class="primary-btn" disabled>
+                        <i class="fas fa-check-circle"></i>
+                        Check In
+                        <div class="btn-loading hidden">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lecturer Authentication -->
+        <div id="lecturerAuth" class="interface">
+            <div class="card auth-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-lock"></i> Lecturer Authentication</h2>
+                    <p>Please enter your credentials to access the lecturer dashboard</p>
+                </div>
+                
+                <form id="authForm">
+                    <div class="form-group">
+                        <label for="lecturerEmail">
+                            <i class="fas fa-envelope"></i>
+                            Email Address:
+                        </label>
+                        <input type="email" id="lecturerEmail" required placeholder="Enter your GCTU email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lecturerPassword">
+                            <i class="fas fa-key"></i>
+                            Password:
+                        </label>
+                        <input type="password" id="lecturerPassword" required placeholder="Enter your password">
+                    </div>
+                    
+                    <button type="submit" id="authBtn" class="primary-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login to Dashboard
+                    </button>
+                </form>
+
+                <div class="demo-credentials">
+                    <h4><i class="fas fa-info-circle"></i> Demo Credentials:</h4>
+                    <p><strong>Email:</strong> lecturer@gctu.edu.gh</p>
+                    <p><strong>Password:</strong> gctu2024</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lecturer Interface -->
+        <div id="lecturerInterface" class="interface">
+            <div class="dashboard">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">
+                        <h2><i class="fas fa-chart-line"></i> Lecturer Dashboard</h2>
+                        <div class="lecturer-info">
+                            <span id="lecturerName">Welcome, Dr. John Doe</span>
+                            <button id="logoutBtn" class="logout-btn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </button>
+                        </div>
+                        <div class="last-updated">
+                            Last updated: <span id="lastUpdated">Never</span>
+                        </div>
+                    </div>
+                    <div class="dashboard-controls">
+                        <div class="filter-group">
+                            <select id="courseFilter">
+                                <option value="">All Courses</option>
+                            </select>
+                            <select id="groupFilter">
+                                <option value="">All Groups</option>
+                                <option value="A">Group A</option>
+                                <option value="B">Group B</option>
+                                <option value="C">Group C</option>
+                                <option value="D">Group D</option>
+                            </select>
+                            <input type="date" id="dateFilter">
+                            <button id="refreshBtn" class="action-btn">
+                                <i class="fas fa-sync-alt"></i>
+                                Refresh
+                            </button>
+                            <button id="exportBtn" class="action-btn">
+                                <i class="fas fa-download"></i>
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qr-generator">
+                    <h3><i class="fas fa-qrcode"></i> Generate Session QR Code</h3>
+                    <div class="qr-controls">
+                        <select id="qrCourse" required>
+                            <option value="">Select Course</option>
+                        </select>
+                        <button id="generateQrBtn" class="primary-btn">
+                            <i class="fas fa-plus"></i>
+                            Generate QR Code
+                        </button>
+                    </div>
+                    <div id="qrCodeDisplay" class="qr-display hidden">
+                        <div class="qr-code-container">
+                            <canvas id="qrCanvas"></canvas>
+                            <div class="qr-info">
+                                <p><strong>Session Code:</strong> <span id="sessionCode"></span></p>
+                                <p><strong>Generated:</strong> <span id="qrTimestamp"></span></p>
+                                <button id="downloadQrBtn" class="action-btn">
+                                    <i class="fas fa-download"></i>
+                                    Download QR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Today's Check-ins</h3>
+                            <span id="todayCount" class="stat-number">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Active Sessions</h3>
+                            <span id="activeCount" class="stat-number">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Total Students</h3>
+                            <span id="totalCount" class="stat-number">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>Attendance Rate</h3>
+                            <span id="attendanceRate" class="stat-number">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="attendance-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-table"></i> Live Attendance Records</h3>
+                        <div class="record-count">
+                            Showing <span id="recordCount">0</span> records
+                        </div>
+                    </div>
+                    <div class="attendance-table">
+                        <table id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-user"></i> Name</th>
+                                    <th><i class="fas fa-id-card"></i> Student ID</th>
+                                    <th><i class="fas fa-book"></i> Course</th>
+                                    <th><i class="fas fa-users"></i> Group</th>
+                                    <th><i class="fas fa-chalkboard-teacher"></i> Lecturer</th>
+                                    <th><i class="fas fa-map-marker-alt"></i> Venue</th>
+                                    <th><i class="fas fa-clock"></i> Time</th>
+                                    <th><i class="fas fa-check-circle"></i> Status</th>
+                                    <th><i class="fas fa-cog"></i> Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceBody">
+                                <!-- Attendance records will be populated here -->
+                            </tbody>
+                        </table>
+                        <div id="noRecords" class="no-records hidden">
+                            <i class="fas fa-inbox"></i>
+                            <p>No attendance records found</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Confirm Action</h3>
+                <button id="modalClose" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage">Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="modalCancel" class="secondary-btn">Cancel</button>
+                <button id="modalConfirm" class="primary-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
