@@ -232,6 +232,134 @@ class SmartAttendanceSystem {
     this.validateForm()
   }
 
+  switchAuthForm(formType) {
+    const loginForm = document.getElementById("loginForm")
+    const signupForm = document.getElementById("signupForm")
+
+    if (formType === "signup") {
+      loginForm.classList.remove("active")
+      signupForm.classList.add("active")
+    } else {
+      signupForm.classList.remove("active")
+      loginForm.classList.add("active")
+    }
+  }
+
+  async handleStudentLogin(e) {
+    e.preventDefault()
+
+    const studentId = document.getElementById("loginStudentId").value.trim()
+    const password = document.getElementById("loginPassword").value
+
+    if (!studentId || !password) {
+      this.showMessage("Please enter both Student ID and password", "error")
+      return
+    }
+
+    try {
+      // Get stored users from localStorage (simulating a database)
+      const users = JSON.parse(localStorage.getItem("registeredUsers") || "{}")
+      const user = users[studentId]
+
+      if (!user) {
+        this.showMessage("Student ID not found. Please sign up first.", "error")
+        return
+      }
+
+      if (user.password !== password) {
+        this.showMessage("Incorrect password. Please try again.", "error")
+        return
+      }
+
+      // Login successful
+      this.currentUser = user
+      this.isAuthenticated = true
+      localStorage.setItem("currentUser", JSON.stringify(user))
+
+      this.hideAuthScreen()
+      this.updateUserInterface()
+
+    } catch (error) {
+      console.error("Login error:", error)
+      this.showMessage("Login failed. Please try again.", "error")
+    }
+  }
+
+  async handleStudentSignup(e) {
+    e.preventDefault()
+
+    const fullName = document.getElementById("signupFullName").value.trim()
+    const studentId = document.getElementById("signupStudentId").value.trim()
+    const email = document.getElementById("signupEmail").value.trim()
+    const password = document.getElementById("signupPassword").value
+    const confirmPassword = document.getElementById("confirmPassword").value
+
+    if (!fullName || !studentId || !email || !password || !confirmPassword) {
+      this.showMessage("Please fill in all fields", "error")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      this.showMessage("Passwords do not match", "error")
+      return
+    }
+
+    if (password.length < 6) {
+      this.showMessage("Password must be at least 6 characters long", "error")
+      return
+    }
+
+    try {
+      // Get existing users
+      const users = JSON.parse(localStorage.getItem("registeredUsers") || "{}")
+
+      // Check if student ID already exists
+      if (users[studentId]) {
+        this.showMessage("Student ID already registered. Please login instead.", "error")
+        return
+      }
+
+      // Create new user
+      const newUser = {
+        fullName,
+        studentId,
+        email,
+        password,
+        registrationDate: new Date().toISOString()
+      }
+
+      // Save user
+      users[studentId] = newUser
+      localStorage.setItem("registeredUsers", JSON.stringify(users))
+
+      // Auto-login after signup
+      this.currentUser = newUser
+      this.isAuthenticated = true
+      localStorage.setItem("currentUser", JSON.stringify(newUser))
+
+      this.hideAuthScreen()
+      this.updateUserInterface()
+      this.showMessage(`Welcome to GCTU Smart Attendance, ${fullName}!`, "success")
+
+    } catch (error) {
+      console.error("Signup error:", error)
+      this.showMessage("Registration failed. Please try again.", "error")
+    }
+  }
+
+  logout() {
+    this.currentUser = null
+    this.isAuthenticated = false
+    localStorage.removeItem("currentUser")
+
+    // Reset form
+    document.getElementById("studentForm").reset()
+    document.getElementById("course").value = ""
+
+    this.showAuthScreen()
+    this.showMessage("You have been logged out", "info")
+  }
+
   validateForm() {
     const name = document.getElementById("studentName").value.trim()
     const studentId = document.getElementById("studentId").value.trim()
