@@ -31,6 +31,7 @@ class SmartAttendanceSystem {
     // Hide loading screen after initialization
     setTimeout(() => {
       this.hideLoadingScreen()
+      this.checkAuthenticationStatus()
     }, 3000)
 
     // Set today's date in filter
@@ -44,7 +45,47 @@ class SmartAttendanceSystem {
 
   hideLoadingScreen() {
     document.getElementById("loadingScreen").style.display = "none"
+    // Don't show main container immediately - let authentication decide
+  }
+
+  showAuthScreen() {
+    document.getElementById("authContainer").style.display = "flex"
+    document.getElementById("mainContainer").style.display = "none"
+  }
+
+  hideAuthScreen() {
+    document.getElementById("authContainer").style.display = "none"
     document.getElementById("mainContainer").style.display = "block"
+  }
+
+  checkAuthenticationStatus() {
+    const currentUser = localStorage.getItem("currentUser")
+    if (currentUser) {
+      this.currentUser = JSON.parse(currentUser)
+      this.isAuthenticated = true
+      this.hideAuthScreen()
+      this.updateUserInterface()
+    } else {
+      this.showAuthScreen()
+    }
+  }
+
+  updateUserInterface() {
+    if (this.currentUser) {
+      // Update student form with user data
+      document.getElementById("studentName").value = this.currentUser.fullName
+      document.getElementById("studentId").value = this.currentUser.studentId
+
+      // Show user info in header
+      document.getElementById("userName").textContent = this.currentUser.fullName
+      document.getElementById("userInfo").style.display = "flex"
+
+      // Show welcome message
+      this.showMessage(`Welcome back, ${this.currentUser.fullName}!`, "success")
+    } else {
+      // Hide user info
+      document.getElementById("userInfo").style.display = "none"
+    }
   }
 
   startRealTimeClock() {
@@ -81,8 +122,22 @@ class SmartAttendanceSystem {
     // Authentication form
     document.getElementById("authForm").addEventListener("submit", (e) => this.handleAuthentication(e))
 
+    // Student authentication forms
+    document.getElementById("studentLoginForm").addEventListener("submit", (e) => this.handleStudentLogin(e))
+    document.getElementById("studentSignupForm").addEventListener("submit", (e) => this.handleStudentSignup(e))
+
+    // Auth form switchers
+    document.getElementById("showSignupForm").addEventListener("click", (e) => {
+      e.preventDefault()
+      this.switchAuthForm("signup")
+    })
+    document.getElementById("showLoginForm").addEventListener("click", (e) => {
+      e.preventDefault()
+      this.switchAuthForm("login")
+    })
+
     // Logout
-    document.getElementById("logoutBtn").addEventListener("click", () => this.handleLogout())
+    document.getElementById("logoutBtn").addEventListener("click", () => this.logout())
 
     // QR Scanner
     document.getElementById("scanQrBtn").addEventListener("click", () => this.startQRScanner())
@@ -182,6 +237,136 @@ class SmartAttendanceSystem {
 
     // Initial validation
     this.validateForm()
+  }
+
+  switchAuthForm(formType) {
+    const loginForm = document.getElementById("loginForm")
+    const signupForm = document.getElementById("signupForm")
+
+    if (formType === "signup") {
+      loginForm.classList.remove("active")
+      signupForm.classList.add("active")
+    } else {
+      signupForm.classList.remove("active")
+      loginForm.classList.add("active")
+    }
+  }
+
+  async handleStudentLogin(e) {
+    e.preventDefault()
+
+    const studentId = document.getElementById("loginStudentId").value.trim()
+    const password = document.getElementById("loginPassword").value
+
+    if (!studentId || !password) {
+      this.showMessage("Please enter both Student ID and password", "error")
+      return
+    }
+
+    try {
+      // Get stored users from localStorage (simulating a database)
+      const users = JSON.parse(localStorage.getItem("registeredUsers") || "{}")
+      const user = users[studentId]
+
+      if (!user) {
+        this.showMessage("Student ID not found. Please sign up first.", "error")
+        return
+      }
+
+      if (user.password !== password) {
+        this.showMessage("Incorrect password. Please try again.", "error")
+        return
+      }
+
+      // Login successful
+      this.currentUser = user
+      this.isAuthenticated = true
+      localStorage.setItem("currentUser", JSON.stringify(user))
+
+      this.hideAuthScreen()
+      this.updateUserInterface()
+
+    } catch (error) {
+      console.error("Login error:", error)
+      this.showMessage("Login failed. Please try again.", "error")
+    }
+  }
+
+  async handleStudentSignup(e) {
+    e.preventDefault()
+
+    const fullName = document.getElementById("signupFullName").value.trim()
+    const studentId = document.getElementById("signupStudentId").value.trim()
+    const email = document.getElementById("signupEmail").value.trim()
+    const password = document.getElementById("signupPassword").value
+    const confirmPassword = document.getElementById("confirmPassword").value
+
+    if (!fullName || !studentId || !email || !password || !confirmPassword) {
+      this.showMessage("Please fill in all fields", "error")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      this.showMessage("Passwords do not match", "error")
+      return
+    }
+
+    if (password.length < 6) {
+      this.showMessage("Password must be at least 6 characters long", "error")
+      return
+    }
+
+    try {
+      // Get existing users
+      const users = JSON.parse(localStorage.getItem("registeredUsers") || "{}")
+
+      // Check if student ID already exists
+      if (users[studentId]) {
+        this.showMessage("Student ID already registered. Please login instead.", "error")
+        return
+      }
+
+      // Create new user
+      const newUser = {
+        fullName,
+        studentId,
+        email,
+        password,
+        registrationDate: new Date().toISOString()
+      }
+
+      // Save user
+      users[studentId] = newUser
+      localStorage.setItem("registeredUsers", JSON.stringify(users))
+
+      // Auto-login after signup
+      this.currentUser = newUser
+      this.isAuthenticated = true
+      localStorage.setItem("currentUser", JSON.stringify(newUser))
+
+      this.hideAuthScreen()
+      this.updateUserInterface()
+      this.showMessage(`Welcome to GCTU Smart Attendance, ${fullName}!`, "success")
+
+    } catch (error) {
+      console.error("Signup error:", error)
+      this.showMessage("Registration failed. Please try again.", "error")
+    }
+  }
+
+  logout() {
+    this.currentUser = null
+    this.isAuthenticated = false
+    localStorage.removeItem("currentUser")
+
+    // Reset form
+    document.getElementById("studentForm").reset()
+    document.getElementById("course").value = ""
+
+    // Update UI
+    this.updateUserInterface()
+    this.showAuthScreen()
+    this.showMessage("You have been logged out", "info")
   }
 
   validateForm() {
@@ -394,6 +579,13 @@ class SmartAttendanceSystem {
 
   async handleCheckIn(e) {
     e.preventDefault()
+
+    // Check if user is authenticated
+    if (!this.isAuthenticated || !this.currentUser) {
+      this.showMessage("❌ Please login first to check in.", "error")
+      this.showAuthScreen()
+      return
+    }
 
     // Prevent double submission
     if (this.isSubmitting) {

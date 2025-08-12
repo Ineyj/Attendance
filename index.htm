@@ -25,6 +25,105 @@
         </div>
     </div>
 
+    <!-- Authentication Interface -->
+    <div id="authContainer" class="auth-container" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="school-logo">
+                    <img src="GCTU Logo.jpg" alt="GCTU Logo">
+                </div>
+                <h1>GCTU Smart Attendance</h1>
+                <p>Knowledge Comes From Learning</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="auth-form active">
+                <h2><i class="fas fa-sign-in-alt"></i> Student Login</h2>
+                <form id="studentLoginForm">
+                    <div class="form-group">
+                        <label for="loginStudentId">
+                            <i class="fas fa-id-card"></i>
+                            Student ID:
+                        </label>
+                        <input type="text" id="loginStudentId" required placeholder="Enter your student ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPassword">
+                            <i class="fas fa-lock"></i>
+                            Password:
+                        </label>
+                        <input type="password" id="loginPassword" required placeholder="Enter your password">
+                    </div>
+
+                    <button type="submit" class="auth-btn primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login
+                    </button>
+                </form>
+
+                <div class="auth-switch">
+                    <p>Don't have an account? <a href="#" id="showSignupForm">Sign up here</a></p>
+                </div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupForm" class="auth-form">
+                <h2><i class="fas fa-user-plus"></i> Student Registration</h2>
+                <form id="studentSignupForm">
+                    <div class="form-group">
+                        <label for="signupFullName">
+                            <i class="fas fa-user"></i>
+                            Full Name:
+                        </label>
+                        <input type="text" id="signupFullName" required placeholder="Enter your full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupStudentId">
+                            <i class="fas fa-id-card"></i>
+                            Student ID:
+                        </label>
+                        <input type="text" id="signupStudentId" required placeholder="Enter your student ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupEmail">
+                            <i class="fas fa-envelope"></i>
+                            Email:
+                        </label>
+                        <input type="email" id="signupEmail" required placeholder="Enter your email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="signupPassword">
+                            <i class="fas fa-lock"></i>
+                            Password:
+                        </label>
+                        <input type="password" id="signupPassword" required placeholder="Create a password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">
+                            <i class="fas fa-lock"></i>
+                            Confirm Password:
+                        </label>
+                        <input type="password" id="confirmPassword" required placeholder="Confirm your password">
+                    </div>
+
+                    <button type="submit" class="auth-btn primary">
+                        <i class="fas fa-user-plus"></i>
+                        Sign Up
+                    </button>
+                </form>
+
+                <div class="auth-switch">
+                    <p>Already have an account? <a href="#" id="showLoginForm">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container" id="mainContainer" style="display: none;">
         <!-- Header -->
         <header class="header">
@@ -38,6 +137,13 @@
                 </div>
             </div>
             <div class="header-right">
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <span class="user-greeting">Welcome, <span id="userName"></span></span>
+                    <button id="logoutBtn" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
                 <div class="live-indicator">
                     <div class="live-dot"></div>
                     <span>LIVE</span>
