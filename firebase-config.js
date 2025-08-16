@@ -10,15 +10,167 @@ const firebaseConfig = {
   appId: "your-app-id",
 }
 
-// Enhanced Mock Firebase for demo purposes
+// Enhanced Mock Firebase for demo purposes with User Authentication
 class MockFirebase {
   constructor() {
     this.data = JSON.parse(localStorage.getItem("attendanceData") || "{}")
+    this.users = JSON.parse(localStorage.getItem("userData") || "{}")
     this.listeners = new Map()
     this.isConnected = true
+    this.currentUser = null
+
+    // Initialize default users if none exist
+    this.initializeDefaultUsers()
 
     // Simulate connection status
     this.simulateConnection()
+  }
+
+  initializeDefaultUsers() {
+    if (!this.users.students || !this.users.lecturers) {
+      this.users = {
+        students: {
+          "GCTU001": {
+            id: "GCTU001",
+            name: "Kwame Asante",
+            email: "kwame.asante@student.gctu.edu.gh",
+            password: "password123", // In real app, this would be hashed
+            role: "student",
+            department: "Computer Science",
+            createdAt: new Date().toISOString()
+          },
+          "GCTU002": {
+            id: "GCTU002",
+            name: "Akosua Mensah",
+            email: "akosua.mensah@student.gctu.edu.gh",
+            password: "password123",
+            role: "student",
+            department: "Information Technology",
+            createdAt: new Date().toISOString()
+          }
+        },
+        lecturers: {
+          "lecturer@gctu.edu.gh": {
+            id: "lecturer@gctu.edu.gh",
+            name: "Dr. John Doe",
+            email: "lecturer@gctu.edu.gh",
+            password: "gctu2024",
+            role: "lecturer",
+            department: "Computer Science",
+            createdAt: new Date().toISOString()
+          }
+        }
+      }
+      localStorage.setItem("userData", JSON.stringify(this.users))
+    }
+  }
+
+  // User Authentication Methods
+  async signUp(userData) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected) {
+        reject(new Error("Network error"))
+        return
+      }
+
+      setTimeout(() => {
+        try {
+          const { email, studentId, role, password, name, department } = userData
+          
+          // Check if user already exists
+          if (role === "student") {
+            if (this.users.students[studentId]) {
+              reject(new Error("Student ID already exists"))
+              return
+            }
+            if (this.users.students[email]) {
+              reject(new Error("Email already exists"))
+              return
+            }
+          } else {
+            if (this.users.lecturers[email]) {
+              reject(new Error("Email already exists"))
+              return
+            }
+          }
+
+          // Create new user
+          const newUser = {
+            id: role === "student" ? studentId : email,
+            name,
+            email,
+            password, // In real app, hash this password
+            role,
+            department,
+            createdAt: new Date().toISOString()
+          }
+
+          if (role === "student") {
+            this.users.students[studentId] = newUser
+            this.users.students[email] = newUser
+          } else {
+            this.users.lecturers[email] = newUser
+          }
+
+          localStorage.setItem("userData", JSON.stringify(this.users))
+          resolve({ user: newUser })
+        } catch (error) {
+          reject(error)
+        }
+      }, 500)
+    })
+  }
+
+  async signIn(credentials) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected) {
+        reject(new Error("Network error"))
+        return
+      }
+
+      setTimeout(() => {
+        try {
+          const { email, studentId, password, role } = credentials
+          let user = null
+
+          if (role === "student") {
+            // Check student login by ID or email
+            user = this.users.students[studentId] || this.users.students[email]
+          } else {
+            // Check lecturer login by email
+            user = this.users.lecturers[email]
+          }
+
+          if (!user || user.password !== password) {
+            reject(new Error("Invalid credentials"))
+            return
+          }
+
+          // Set current user
+          this.currentUser = user
+          resolve({ user })
+        } catch (error) {
+          reject(error)
+        }
+      }, 500)
+    })
+  }
+
+  async signOut() {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        this.currentUser = null
+        resolve()
+      }, 200)
+    })
+  }
+
+  getCurrentUser() {
+    return this.currentUser
+  }
+
+  isAuthenticated() {
+    return !!this.currentUser
   }
 
   simulateConnection() {

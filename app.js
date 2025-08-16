@@ -1,7 +1,8 @@
 class SmartAttendanceSystem {
   validateForm() {
-    const name = document.getElementById("studentName").value.trim();
-    const studentId = document.getElementById("studentId").value.trim();
+    // If user is authenticated, use their information
+    const name = this.currentUser ? this.currentUser.name : document.getElementById("studentName").value.trim();
+    const studentId = this.currentUser ? this.currentUser.id : document.getElementById("studentId").value.trim();
     const course = document.getElementById("course").value.trim();
     const group = document.getElementById("group").value;
     const lecturer = document.getElementById("lecturer").value.trim();
@@ -25,7 +26,7 @@ class SmartAttendanceSystem {
   constructor() {
     this.currentLocation = null
     this.currentUser = null
-  this.attendanceData = []
+    this.attendanceData = []
     this.realTimeInterval = null
     this.isAuthenticated = false
     this.isSubmitting = false
@@ -42,6 +43,16 @@ class SmartAttendanceSystem {
 
   init() {
     this.showLoadingScreen()
+    
+    // Check if user is already authenticated
+    if (window.database.isAuthenticated()) {
+      this.currentUser = window.database.getCurrentUser()
+      this.isAuthenticated = true
+      this.showMainInterface()
+    } else {
+      this.showAuthInterface()
+    }
+    
     this.setupEventListeners()
     this.startRealTimeClock()
     this.getCurrentLocation()
@@ -68,32 +79,276 @@ class SmartAttendanceSystem {
   showLoadingScreen() {
     document.getElementById("loadingScreen").style.display = "flex"
     document.getElementById("mainContainer").style.display = "none"
+    document.getElementById("authContainer").style.display = "none"
   }
 
   hideLoadingScreen() {
     document.getElementById("loadingScreen").style.display = "none"
-    document.getElementById("mainContainer").style.display = "block"
   }
 
-      switchRole(role) {
-        // Hide both interfaces first
-        document.getElementById("studentInterface").classList.remove("active")
-        document.getElementById("lecturerInterface").classList.remove("active")
-        document.getElementById("lecturerAuth").classList.remove("active")
+  showAuthInterface() {
+    document.getElementById("authContainer").style.display = "flex"
+    document.getElementById("mainContainer").style.display = "none"
+    
+    // Hide user profile and show role switcher
+    document.getElementById("userProfile").style.display = "none"
+    document.getElementById("roleSwitcher").style.display = "flex"
+  }
 
-        if (role === "student") {
-          document.getElementById("studentInterface").classList.add("active")
-          this.showMessage("Switched to Student mode.", "info")
-        } else if (role === "lecturer") {
-          // If not authenticated, show auth form; else show lecturer dashboard
-          if (this.isAuthenticated) {
-            document.getElementById("lecturerInterface").classList.add("active")
-          } else {
-            document.getElementById("lecturerAuth").classList.add("active")
-          }
-          this.showMessage("Switched to Lecturer mode.", "info")
-        }
+  showMainInterface() {
+    document.getElementById("authContainer").style.display = "none"
+    document.getElementById("mainContainer").style.display = "block"
+    
+    // Show user profile and hide role switcher
+    document.getElementById("userProfile").style.display = "flex"
+    document.getElementById("roleSwitcher").style.display = "none"
+    
+    // Update user profile information
+    this.updateUserProfile()
+    
+    // Set the appropriate interface based on user role
+    if (this.currentUser.role === "student") {
+      this.switchRole("student")
+      this.preFillStudentForm()
+    } else {
+      this.switchRole("lecturer")
+      this.updateLecturerInterface()
+    }
+  }
+
+  updateUserProfile() {
+    if (this.currentUser) {
+      document.getElementById("userDisplayName").textContent = this.currentUser.name
+      document.getElementById("userRole").textContent = this.currentUser.role
+    }
+  }
+
+  preFillStudentForm() {
+    // Pre-fill student information in the form
+    if (this.currentUser && this.currentUser.role === "student") {
+      document.getElementById("studentName").value = this.currentUser.name
+      document.getElementById("studentId").value = this.currentUser.id
+      
+      // Make these fields read-only since they're from the user's profile
+      document.getElementById("studentName").readOnly = true
+      document.getElementById("studentId").readOnly = true
+      
+      // Add visual indication that these are pre-filled
+      document.getElementById("studentName").style.backgroundColor = "#f8f9fa"
+      document.getElementById("studentId").style.backgroundColor = "#f8f9fa"
+    }
+  }
+
+  updateLecturerInterface() {
+    // Update lecturer interface with user information
+    if (this.currentUser && this.currentUser.role === "lecturer") {
+      document.getElementById("lecturerName").textContent = `Welcome, ${this.currentUser.name}`
+    }
+  }
+
+  // Authentication Methods
+  async handleStudentLogin(e) {
+    e.preventDefault()
+    const studentId = document.getElementById("studentLoginId").value.trim()
+    const password = document.getElementById("studentLoginPassword").value.trim()
+
+    if (!studentId || !password) {
+      this.showAuthMessage("Please fill in all fields", "error")
+      return
+    }
+
+    try {
+      const result = await window.database.signIn({
+        studentId,
+        password,
+        role: "student"
+      })
+
+      this.currentUser = result.user
+      this.isAuthenticated = true
+      this.showMainInterface()
+      this.showAuthMessage("Login successful! Welcome back.", "success")
+    } catch (error) {
+      this.showAuthMessage(error.message, "error")
+    }
+  }
+
+  async handleLecturerLogin(e) {
+    e.preventDefault()
+    const email = document.getElementById("lecturerLoginEmail").value.trim()
+    const password = document.getElementById("lecturerLoginPassword").value.trim()
+
+    if (!email || !password) {
+      this.showAuthMessage("Please fill in all fields", "error")
+      return
+    }
+
+    try {
+      const result = await window.database.signIn({
+        email,
+        password,
+        role: "lecturer"
+      })
+
+      this.currentUser = result.user
+      this.isAuthenticated = true
+      this.showMainInterface()
+      this.showAuthMessage("Login successful! Welcome to the lecturer dashboard.", "success")
+    } catch (error) {
+      this.showAuthMessage(error.message, "error")
+    }
+  }
+
+  async handleStudentSignup(e) {
+    e.preventDefault()
+    const name = document.getElementById("studentSignupName").value.trim()
+    const studentId = document.getElementById("studentSignupId").value.trim()
+    const email = document.getElementById("studentSignupEmail").value.trim()
+    const password = document.getElementById("studentSignupPassword").value
+    const confirmPassword = document.getElementById("studentSignupConfirmPassword").value
+
+    // Validation
+    if (!name || !studentId || !email || !password || !confirmPassword) {
+      this.showAuthMessage("Please fill in all fields", "error")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      this.showAuthMessage("Passwords do not match", "error")
+      return
+    }
+
+    if (password.length < 6) {
+      this.showAuthMessage("Password must be at least 6 characters long", "error")
+      return
+    }
+
+    try {
+      const result = await window.database.signUp({
+        name,
+        studentId,
+        email,
+        password,
+        role: "student",
+        department: "Student"
+      })
+
+      this.showAuthMessage("Account created successfully! Please login.", "success")
+      this.switchAuthTab("student-login")
+      document.getElementById("studentSignupForm").reset()
+    } catch (error) {
+      this.showAuthMessage(error.message, "error")
+    }
+  }
+
+  async handleLecturerSignup(e) {
+    e.preventDefault()
+    const name = document.getElementById("lecturerSignupName").value.trim()
+    const email = document.getElementById("lecturerSignupEmail").value.trim()
+    const department = document.getElementById("lecturerSignupDepartment").value
+    const password = document.getElementById("lecturerSignupPassword").value
+    const confirmPassword = document.getElementById("lecturerSignupConfirmPassword").value
+
+    // Validation
+    if (!name || !email || !department || !password || !confirmPassword) {
+      this.showAuthMessage("Please fill in all fields", "error")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      this.showAuthMessage("Passwords do not match", "error")
+      return
+    }
+
+    if (password.length < 6) {
+      this.showAuthMessage("Password must be at least 6 characters long", "error")
+      return
+    }
+
+    if (!email.endsWith("@gctu.edu.gh")) {
+      this.showAuthMessage("Please use a valid GCTU email address", "error")
+      return
+    }
+
+    try {
+      const result = await window.database.signUp({
+        name,
+        email,
+        password,
+        role: "lecturer",
+        department
+      })
+
+      this.showAuthMessage("Account created successfully! Please login.", "success")
+      this.switchAuthTab("lecturer-login")
+      document.getElementById("lecturerSignupForm").reset()
+    } catch (error) {
+      this.showAuthMessage(error.message, "error")
+    }
+  }
+
+  switchAuthTab(tabName) {
+    // Hide all forms
+    document.querySelectorAll('.auth-form').forEach(form => {
+      form.classList.remove('active')
+    })
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+      tab.classList.remove('active')
+    })
+    
+    // Show selected form and activate tab
+    document.getElementById(tabName).classList.add('active')
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active')
+  }
+
+  showAuthMessage(text, type) {
+    // Create a temporary message element
+    const message = document.createElement('div')
+    message.className = `auth-message ${type}`
+    message.innerHTML = `
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i>
+      <span>${text}</span>
+    `
+    
+    // Add to auth wrapper
+    const authWrapper = document.querySelector('.auth-wrapper')
+    authWrapper.appendChild(message)
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (message.parentNode) {
+        message.remove()
       }
+    }, 5000)
+  }
+
+  async handleLogout() {
+    try {
+      await window.database.signOut()
+      this.isAuthenticated = false
+      this.currentUser = null
+      this.stopRealTimeUpdates()
+
+      // Reset all forms
+      document.getElementById("studentForm").reset()
+      document.getElementById("authForm").reset()
+      document.getElementById("studentLoginForm").reset()
+      document.getElementById("lecturerLoginForm").reset()
+      document.getElementById("studentSignupForm").reset()
+      document.getElementById("lecturerSignupForm").reset()
+
+      // Show auth interface
+      this.showAuthInterface()
+      this.switchAuthTab("student-login")
+      
+      this.showMessage("Logged out successfully.", "success")
+    } catch (error) {
+      this.showMessage("Logout failed", "error")
+    }
+  }
+
   startRealTimeClock() {
     const updateClock = () => {
       const now = new Date()
@@ -117,6 +372,26 @@ class SmartAttendanceSystem {
     setInterval(updateClock, 1000)
   }
 
+  switchRole(role) {
+    // Hide both interfaces first
+    document.getElementById("studentInterface").classList.remove("active")
+    document.getElementById("lecturerInterface").classList.remove("active")
+    document.getElementById("lecturerAuth").classList.remove("active")
+
+    if (role === "student") {
+      document.getElementById("studentInterface").classList.add("active")
+      this.showMessage("Switched to Student mode.", "info")
+    } else if (role === "lecturer") {
+      // If not authenticated, show auth form; else show lecturer dashboard
+      if (this.isAuthenticated) {
+        document.getElementById("lecturerInterface").classList.add("active")
+      } else {
+        document.getElementById("lecturerAuth").classList.add("active")
+      }
+      this.showMessage("Switched to Lecturer mode.", "info")
+    }
+  }
+
   setupEventListeners() {
     // Role switcher
     document.getElementById("studentBtn").addEventListener("click", () => this.switchRole("student"))
@@ -128,15 +403,47 @@ class SmartAttendanceSystem {
     // Authentication form
     document.getElementById("authForm").addEventListener("submit", (e) => this.handleAuthentication(e))
 
-    // Logout
-    document.getElementById("logoutBtn").addEventListener("click", () => this.handleLogout())
+    // New authentication forms
+    document.getElementById("studentLoginForm").addEventListener("submit", (e) => this.handleStudentLogin(e))
+    document.getElementById("lecturerLoginForm").addEventListener("submit", (e) => this.handleLecturerLogin(e))
+    document.getElementById("studentSignupForm").addEventListener("submit", (e) => this.handleStudentSignup(e))
+    document.getElementById("lecturerSignupForm").addEventListener("submit", (e) => this.handleLecturerSignup(e))
 
-  // Lecturer controls
-  document.getElementById("courseFilter").addEventListener("change", () => this.filterAttendance())
-  document.getElementById("groupFilter").addEventListener("change", () => this.filterAttendance())
-  document.getElementById("dateFilter").addEventListener("change", () => this.filterAttendance())
-  document.getElementById("refreshBtn").addEventListener("click", () => this.refreshData())
-  document.getElementById("exportBtn").addEventListener("click", () => this.exportToCSV())
+    // Auth tab switching
+    document.querySelectorAll('.auth-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab')
+        this.switchAuthTab(tabName)
+      })
+    })
+
+    // Switch between login and signup
+    document.querySelectorAll('.switch-to-signup').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault()
+        const role = link.getAttribute('data-role')
+        this.switchAuthTab(`${role}-signup`)
+      })
+    })
+
+    document.querySelectorAll('.switch-to-login').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault()
+        const role = link.getAttribute('data-role')
+        this.switchAuthTab(`${role}-login`)
+      })
+    })
+
+    // Logout buttons
+    document.getElementById("logoutBtn").addEventListener("click", () => this.handleLogout())
+    document.getElementById("headerLogoutBtn").addEventListener("click", () => this.handleLogout())
+
+    // Lecturer controls
+    document.getElementById("courseFilter").addEventListener("change", () => this.filterAttendance())
+    document.getElementById("groupFilter").addEventListener("change", () => this.filterAttendance())
+    document.getElementById("dateFilter").addEventListener("change", () => this.filterAttendance())
+    document.getElementById("refreshBtn").addEventListener("click", () => this.refreshData())
+    document.getElementById("exportBtn").addEventListener("click", () => this.exportToCSV())
 
     // Modal
     document.getElementById("modalClose").addEventListener("click", () => this.hideModal())
@@ -201,20 +508,6 @@ class SmartAttendanceSystem {
     } else {
       this.showMessage("Invalid credentials. Please check your email and password.", "error")
     }
-  }
-
-  handleLogout() {
-    this.isAuthenticated = false
-    this.currentUser = null
-    this.stopRealTimeUpdates()
-
-    document.getElementById("lecturerInterface").classList.remove("active")
-    document.getElementById("lecturerAuth").classList.add("active")
-
-    // Clear form
-    document.getElementById("authForm").reset()
-
-    this.showMessage("Logged out successfully.", "success")
   }
 
   getCurrentLocation() {
@@ -334,9 +627,10 @@ class SmartAttendanceSystem {
     checkInBtn.innerHTML =
       '<i class="fas fa-spinner fa-spin"></i> Checking In... <div class="btn-loading"><i class="fas fa-spinner fa-spin"></i></div>'
 
+    // Use logged-in user information if available
     const formData = {
-      name: document.getElementById("studentName").value.trim(),
-      studentId: document.getElementById("studentId").value.trim(),
+      name: this.currentUser ? this.currentUser.name : document.getElementById("studentName").value.trim(),
+      studentId: this.currentUser ? this.currentUser.id : document.getElementById("studentId").value.trim(),
       course: document.getElementById("course").value,
       group: document.getElementById("group").value,
       lecturer: document.getElementById("lecturer").value.trim(),
@@ -350,8 +644,11 @@ class SmartAttendanceSystem {
       // Directly add to mock database and refresh lecturer table
       window.database.ref("attendance").push(formData).then(() => {
         this.showMessage(`✅ Check-in successful! Your attendance has been recorded.`, "success")
-        document.getElementById("studentForm").reset()
+        // Only reset non-user fields
         document.getElementById("course").value = ""
+        document.getElementById("group").value = ""
+        document.getElementById("lecturer").value = ""
+        document.getElementById("venue").value = ""
         document.getElementById("courseSearch").value = ""
         checkInBtn.innerHTML = '<i class="fas fa-check-circle"></i> Check-In Successful!'
         checkInBtn.style.background = "linear-gradient(135deg, var(--success) 0%, #059669 100%)"
@@ -411,8 +708,11 @@ class SmartAttendanceSystem {
       existingCheckIns.push(duplicateKey)
       localStorage.setItem("checkInKeys", JSON.stringify(existingCheckIns))
       this.showMessage(`✅ Check-in successful for ${formData.course} - Group ${formData.group}!`, "success")
-      document.getElementById("studentForm").reset()
+      // Only reset non-user fields
       document.getElementById("course").value = ""
+      document.getElementById("group").value = ""
+      document.getElementById("lecturer").value = ""
+      document.getElementById("venue").value = ""
       document.getElementById("courseSearch").value = ""
       checkInBtn.innerHTML = '<i class="fas fa-check-circle"></i> Check-In Successful!'
       checkInBtn.style.background = "linear-gradient(135deg, var(--success) 0%, #059669 100%)"
