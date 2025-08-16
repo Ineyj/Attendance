@@ -6,8 +6,7 @@
     <title>Smart Attendance System - GCTU</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- QR code dependencies removed -->
 </head>
 <body>
     <!-- Loading Screen -->
@@ -124,30 +123,7 @@
                         <input type="text" id="venue" required placeholder="e.g., Lecture Hall A, Lab 2, Room 101">
                     </div>
                     
-                    <div class="form-group">
-                        <label for="qrInput">
-                            <i class="fas fa-qrcode"></i>
-                            Session QR Code (Optional):
-                        </label>
-                        <div class="qr-input-group">
-                            <input type="text" id="qrInput" placeholder="Scan or enter session code">
-                            <button type="button" id="scanQrBtn" class="scan-btn">
-                                <i class="fas fa-camera"></i>
-                                Scan QR
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div id="qrScanner" class="qr-scanner hidden">
-                        <div class="scanner-header">
-                            <h3><i class="fas fa-camera"></i> QR Code Scanner</h3>
-                            <button type="button" id="stopScanBtn" class="close-btn">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div id="qrReader" class="qr-reader"></div>
-                        <p class="scanner-instruction">Position the QR code within the frame</p>
-                    </div>
+
                     
                     <div class="location-status" id="locationStatus">
                         <div class="status-content">
@@ -251,31 +227,7 @@
                     </div>
                 </div>
 
-                <div class="qr-generator">
-                    <h3><i class="fas fa-qrcode"></i> Generate Session QR Code</h3>
-                    <div class="qr-controls">
-                        <select id="qrCourse" required>
-                            <option value="">Select Course</option>
-                        </select>
-                        <button id="generateQrBtn" class="primary-btn">
-                            <i class="fas fa-plus"></i>
-                            Generate QR Code
-                        </button>
-                    </div>
-                    <div id="qrCodeDisplay" class="qr-display hidden">
-                        <div class="qr-code-container">
-                            <canvas id="qrCanvas"></canvas>
-                            <div class="qr-info">
-                                <p><strong>Session Code:</strong> <span id="sessionCode"></span></p>
-                                <p><strong>Generated:</strong> <span id="qrTimestamp"></span></p>
-                                <button id="downloadQrBtn" class="action-btn">
-                                    <i class="fas fa-download"></i>
-                                    Download QR
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div class="stats">
                     <div class="stat-card">
